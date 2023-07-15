@@ -1,0 +1,95 @@
+#!/bin/sh
+
+API='https://dev.azure.com/EverestAPI/Everest/_apis/build/builds'
+API_VERSION='7.0'
+
+env_check() {
+  for bin in awk curl jq mono unzip; do
+    if ! command -v "${bin}" > /dev/null 2>&1; then
+      printf "program '%s' not found\n" "${bin}" 1>&2
+      exit 1
+    fi
+  done
+
+  # arbitrary check to ensure celeste installation exists within current directory
+  for req in Celeste.bin.x86_64 Celeste.Content.dll Celeste.Content.pdb Celeste.exe Celeste.pdb; do
+    if [ ! -f "${req}" ]; then
+      printf "file '%s' not found\n" "${req}" 1>&2
+      exit 1
+    fi
+  done
+}
+
+# https://github.com/leo60228/everinst/blob/master/src/updater.rs
+find_versions() {
+  curl -fsSL "${API}?api-version=${API_VERSION}" |
+    jq -r '.value[] |
+      .sourceBranch + " " +
+      .status + " " +
+      .result + " " +
+      .reason + " " +
+      (.id|tostring)' |
+    awk '$1 != "refs/heads/core"' |
+    awk '$2 == "completed"' |
+    awk '$3 == "succeeded"' |
+    awk '$4 == "manual" || $4 == "individualCI"' |
+    awk '{print $5 " " $1}' |
+    sed 's#refs/heads/##g'
+}
+
+everest_install() {
+  trap "rm -f everest.zip; exit 1" HUP INT TERM
+
+  curl -fsSL -o everest.zip "${API}/${1}/artifacts?artifactName=main&api-version=7.0&%24format=zip"
+
+  unzip -joq everest.zip
+
+  rm -f everest.zip
+
+  mono MiniInstaller.exe
+}
+
+RST='\033[0;00m'
+RED='\033[0;31m'
+RDB='\033[1;31m'
+GRN='\033[0;32m'
+GLD='\033[0;33m'
+
+usage() {
+  printf "%b\n" "${GLD}USAGE${RST}:"
+  printf "%s\n" "    $(basename "$0") [BRANCH]"
+  printf "\n"
+  printf "%b\n" "${GLD}BRANCHES${RST}:"
+  printf "%b\n" "    ${GRN}s${RST}, ${GRN}stable${RST}"
+  printf "%b\n" "    ${GRN}b${RST}, ${GRN}beta${RST}"
+  printf "%b\n" "    ${GRN}d${RST}, ${GRN}dev${RST}"
+}
+
+case $1 in
+  s | stable)
+    env_check
+    ver=$(find_versions | awk '$2 == "stable" {print $1; exit}')
+    everest_install "${ver}"
+    ;;
+
+  b | beta)
+    env_check
+    ver=$(find_versions | awk '$2 == "beta" {print $1; exit}')
+    everest_install "${ver}"
+    ;;
+
+  d | dev)
+    env_check
+    ver=$(find_versions | awk '$2 == "dev" {print $1; exit}')
+    everest_install "${ver}"
+    ;;
+
+  h | -h | help | --help | "")
+    usage
+    ;;
+
+  *)
+    printf "%b\n" "${RDB}error${RST}: unknown argument '${RED}$1${RST}'" 1>&2
+    exit 1
+    ;;
+esac
