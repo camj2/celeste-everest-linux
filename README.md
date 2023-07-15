@@ -2,7 +2,7 @@
 Fast lightweight everest installer for linux users.
 
 # How to use
-When inside the celeste installation directory, run 'celeste-everest-linux stable' to download and install the stable branch
+Run 'celeste-everest-linux stable' to download and install the stable branch to the celeste installation found in the current directory.
 
 Run 'celeste-everest-linux -h' for a list of options.
 
