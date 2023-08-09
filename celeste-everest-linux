@@ -5,23 +5,23 @@ API_VERSION='7.0'
 
 env_check() {
   for bin in awk curl jq mono unzip; do
-    if ! command -v "${bin}" > /dev/null 2>&1; then
-      printf "program '%s' not found\n" "${bin}" 1>&2
+    if ! command -v "$bin" > /dev/null 2>&1; then
+      printf "program '%s' not found\n" "$bin" 1>&2
       exit 1
     fi
   done
 
   # arbitrary check to ensure celeste installation exists within current directory
   for req in Celeste.bin.x86_64 Celeste.Content.dll Celeste.Content.pdb Celeste.exe Celeste.pdb; do
-    if [ ! -f "${req}" ]; then
-      printf "file '%s' not found\n" "${req}" 1>&2
+    if [ ! -f "$req" ]; then
+      printf "file '%s' not found\n" "$req" 1>&2
       exit 1
     fi
   done
 }
 
-# https://github.com/leo60228/everinst/blob/master/src/updater.rs
-find_versions() {
+azure_parse() {
+  # https://github.com/leo60228/everinst/blob/master/src/updater.rs
   curl -fsSL "${API}?api-version=${API_VERSION}" |
     jq -r '.value[] |
       .sourceBranch + " " +
@@ -49,9 +49,13 @@ everest_install() {
   mono MiniInstaller.exe
 }
 
+everest_install_branch() {
+  version=$(azure_parse | awk -v branch="$1" '$2 == branch {print $1; exit}')
+
+  everest_install "$version"
+}
+
 RST='\033[0;00m'
-RED='\033[0;31m'
-RDB='\033[1;31m'
 GRN='\033[0;32m'
 GLD='\033[0;33m'
 
@@ -68,20 +72,17 @@ usage() {
 case $1 in
   s | stable)
     env_check
-    ver=$(find_versions | awk '$2 == "stable" {print $1; exit}')
-    everest_install "${ver}"
+    everest_install_branch stable
     ;;
 
   b | beta)
     env_check
-    ver=$(find_versions | awk '$2 == "beta" {print $1; exit}')
-    everest_install "${ver}"
+    everest_install_branch beta
     ;;
 
   d | dev)
     env_check
-    ver=$(find_versions | awk '$2 == "dev" {print $1; exit}')
-    everest_install "${ver}"
+    everest_install_branch dev
     ;;
 
   h | -h | help | --help | "")
@@ -89,7 +90,7 @@ case $1 in
     ;;
 
   *)
-    printf "%b\n" "${RDB}error${RST}: unknown argument '${RED}$1${RST}'" 1>&2
+    printf "%s: invalid branch -- '%s'\n" "$(basename "$0")" "$1" 1>&2
     exit 1
     ;;
 esac
