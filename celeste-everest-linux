@@ -38,7 +38,7 @@ everest_install() {
   TMP=$(mktemp -d /tmp/celeste-everest-linux-XXXXXXXXX)
 
   curl -fsSL -o "$TMP/everest.zip" \
-    "${API}/${1}/artifacts?artifactName=main&api-version=7.0&%24format=zip"
+    "${API}/${1}/artifacts?artifactName=main&api-version=7.0&%24format=zip" || exit
 
   unzip -q -d "$TMP/everest" "$TMP/everest.zip"
 
