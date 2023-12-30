@@ -4,7 +4,7 @@ API=https://dev.azure.com/EverestAPI/Everest/_apis/build/builds
 API_VERSION=7.0
 
 env_check() {
-  for bin in jq awk curl unzip; do
+  for bin in jq awk curl unzip rsync; do
     if ! command -v "$bin" > /dev/null 2>&1; then
       printf "program '%s' not found\n" "$bin" 1>&2
       exit 1
@@ -35,15 +35,20 @@ azure_parse() {
 }
 
 everest_install() {
-  trap "rm -f everest.zip; exit 1" HUP INT TERM
+  TMP=$(mktemp -d /tmp/celeste-everest-linux-XXXXXXXXX)
 
-  curl -fsSL -o everest.zip "${API}/${1}/artifacts?artifactName=main&api-version=7.0&%24format=zip"
+  curl -fsSL -o "$TMP/everest.zip" \
+    "${API}/${1}/artifacts?artifactName=main&api-version=7.0&%24format=zip"
 
-  unzip -joq everest.zip
+  unzip -q -d "$TMP/everest" "$TMP/everest.zip"
 
-  rm -f everest.zip
+  rsync -aAX --checksum "$TMP/everest/main/" ./
 
-  mono MiniInstaller.exe
+  rm -rf "$TMP"
+
+  chmod +x MiniInstaller-linux
+
+  ./MiniInstaller-linux
 }
 
 everest_install_branch() {
