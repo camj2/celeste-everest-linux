@@ -49,6 +49,8 @@ everest_install() {
   chmod +x MiniInstaller-linux
 
   ./MiniInstaller-linux
+
+  [ ! -e Celeste.bin.x86_64 ] && ln -s Celeste Celeste.bin.x86_64
 }
 
 everest_install_branch() {
