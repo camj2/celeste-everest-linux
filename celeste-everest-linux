@@ -4,20 +4,17 @@ API=https://dev.azure.com/EverestAPI/Everest/_apis/build/builds
 API_VERSION=7.0
 
 env_check() {
-  for bin in awk curl jq mono unzip; do
+  for bin in jq awk curl unzip; do
     if ! command -v "$bin" > /dev/null 2>&1; then
       printf "program '%s' not found\n" "$bin" 1>&2
       exit 1
     fi
   done
 
-  # arbitrary check to ensure celeste installation exists within current directory
-  for req in Celeste.bin.x86_64 Celeste.Content.dll Celeste.Content.pdb Celeste.exe Celeste.pdb; do
-    if [ ! -f "$req" ]; then
-      printf "file '%s' not found\n" "$req" 1>&2
-      exit 1
-    fi
-  done
+  if [ ! -x Celeste ]; then
+    printf "executable '%s/Celeste' not found\n" "$(pwd)" 1>&2
+    exit 1
+  fi
 }
 
 azure_parse() {
