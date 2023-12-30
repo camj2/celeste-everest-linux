@@ -26,6 +26,7 @@ azure_parse() {
       .result + " " +
       .reason + " " +
       (.id|tostring)' |
+    awk '$1 != "refs/heads/core"' |
     awk '$2 == "completed"' |
     awk '$3 == "succeeded"' |
     awk '$4 == "manual" || $4 == "individualCI"' |
