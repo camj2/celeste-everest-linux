@@ -2,7 +2,7 @@
 
 Fast lightweight `Everest` installer for Linux users.
 
-This project aims to make the installation and update process of the [Everest Mod Loader](https://everestapi.github.io/) simpler and more straightforward. `celeste-everest-linux` fetches the latest version of the specified branch and patches the `Celeste` installation found in the current working directory. No GUI required.
+This project aims to make the installation and update procedure of the [Everest Mod Loader](https://everestapi.github.io/) simple and straightforward. `celeste-everest-linux` fetches the latest version of the specified branch and patches the `Celeste` installation found in the current working directory. No GUI required.
 
 ![Everest](everest.png)
 
