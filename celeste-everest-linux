@@ -50,7 +50,7 @@ everest_install() {
 
   ./MiniInstaller-linux
 
-  ln -s Celeste Celeste.bin.x86_64
+  [ ! -e Celeste.bin.x86_64 ] && ln -s Celeste Celeste.bin.x86_64
 }
 
 everest_install_branch() {
