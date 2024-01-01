@@ -6,7 +6,7 @@ API_VERSION=7.0
 TMP="${XDG_RUNTIME_DIR:-/tmp}/celeste-everest-linux"
 
 env_check() {
-  for bin in jq awk sed curl unzip rsync; do
+  for bin in jq awk sed curl unzip; do
     if ! command -v "$bin" > /dev/null 2>&1; then
       printf "program '%s' not found\n" "$bin" 1>&2
       exit 1
@@ -51,7 +51,7 @@ everest_install() {
 
   unzip -q -d "$TMP/everest" "$TMP/everest.zip"
 
-  rsync -aAX --checksum "$TMP/everest/main/" ./
+  cp -rf "$TMP/everest/main/" ./
 
   rm -rf "$TMP"
 
