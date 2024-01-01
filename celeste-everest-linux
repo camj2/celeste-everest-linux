@@ -8,18 +8,18 @@ TMP="${XDG_RUNTIME_DIR:-/tmp}/celeste-everest-linux"
 env_check() {
   for bin in jq awk sed curl unzip rsync; do
     if ! command -v "$bin" > /dev/null 2>&1; then
-      printf "program '%s' not found\n" "$bin" 1>&2
+      printf "celeste-everest-linux: program '%s' not installed\n" "$bin" 1>&2
       exit 1
     fi
   done
 
   if [ ! -x Celeste ]; then
-    printf "executable '%s/Celeste' not found\n" "$(pwd)" 1>&2
+    printf "celeste-everest-linux: executable '%s/Celeste' not found\n" "$(pwd)" 1>&2
     exit 1
   fi
 
   if [ -e "$TMP" ]; then
-    printf "directory '%s' already exists\n" "$TMP" 1>&2
+    printf "celeste-everest-linux: directory '%s' already exists\n" "$TMP" 1>&2
     exit 1
   fi
 }
@@ -68,7 +68,7 @@ everest_install_branch() {
   version=$(azure_parse | awk -v branch="$1" '$2 == branch {print $1; exit}')
 
   if [ -z "$version" ]; then
-    printf "failed to parse Azure API\n" 1>&2
+    printf "celeste-everest-linux: unable to parse Azure API\n" 1>&2
     exit 1
   fi
 
@@ -81,7 +81,7 @@ GLD='\033[0;33m'
 
 usage() {
   printf "%b\n" "${GLD}USAGE${RST}:"
-  printf "%s\n" "    $(basename "$0") [BRANCH]"
+  printf "%s\n" "    celeste-everest-linux [BRANCH]"
   printf "\n"
   printf "%b\n" "${GLD}BRANCHES${RST}:"
   printf "%b\n" "    ${GRN}s${RST}, ${GRN}stable${RST}"
@@ -110,7 +110,7 @@ case $1 in
     ;;
 
   *)
-    printf "%s: invalid branch -- '%s'\n" "$(basename "$0")" "$1" 1>&2
+    printf "celeste-everest-linux: invalid branch -- '%s'\n" "$1" 1>&2
     exit 1
     ;;
 esac
