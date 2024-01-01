@@ -4,7 +4,7 @@ API=https://dev.azure.com/EverestAPI/Everest/_apis/build/builds
 API_VERSION=7.0
 
 env_check() {
-  for bin in jq awk curl unzip rsync; do
+  for bin in jq awk sed curl unzip rsync; do
     if ! command -v "$bin" > /dev/null 2>&1; then
       printf "program '%s' not found\n" "$bin" 1>&2
       exit 1
