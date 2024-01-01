@@ -19,7 +19,7 @@ env_check() {
 
 azure_parse() {
   # https://github.com/leo60228/everinst/blob/master/src/updater.rs
-  curl -fsSL "${API}?api-version=${API_VERSION}" |
+  curl -s "${API}?api-version=${API_VERSION}" |
     jq -r '.value[] |
       .sourceBranch + " " +
       .status + " " +
@@ -55,6 +55,11 @@ everest_install() {
 
 everest_install_branch() {
   version=$(azure_parse | awk -v branch="$1" '$2 == branch {print $1; exit}')
+
+  if [ -z "$version" ]; then
+    printf "failed to parse Azure API\n" 1>&2
+    exit 1
+  fi
 
   everest_install "$version"
 }
