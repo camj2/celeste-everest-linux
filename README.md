@@ -2,29 +2,36 @@
 
 Fast lightweight `Everest` installer for Linux users.
 
-This project aims to make the installation and update procedure of the [Everest Mod Loader](https://everestapi.github.io/) simple and straightforward. `celeste-everest-linux` fetches the latest version of the specified branch and patches the `Celeste` installation found in the current working directory. No [GUI](https://wikipedia.org/wiki/Graphical_user_interface) required.
+This project aims to make the installation and update procedure of the [Everest Mod Loader](https://everestapi.github.io/) simple and straightforward. `celeste-everest-linux` fetches the latest version of the specified branch and patches the `Celeste` installation found in the current working directory. No [GUI](https://github.com/EverestAPI/Olympus) required.
 
 ![Everest](everest.png)
 
 ## Installation
 
-Install:
-
 ```
 git clone https://gitlab.com/camj/celeste-everest-linux
-
 cd celeste-everest-linux
-
 make install
 ```
 
-Dependencies:
+### Dependencies
 
 * [jq](https://jqlang.github.io/jq/)
+* curl
+* unzip
+* rsync
 
 ## Usage
 
-`celeste-everest-linux -h`
+```
+USAGE:
+    celeste-everest-linux [BRANCH]
+
+BRANCHES:
+    s, stable
+    b, beta
+    d, dev
+```
 
 ## Install Everest
 
@@ -32,12 +39,23 @@ Dependencies:
 
 ### Stable (Recommended)
 
-`celeste-everest-linux stable`
+```sh
+$ celeste-everest-linux stable
+```
 
 ### Beta
 
-`celeste-everest-linux beta`
+```sh
+$ celeste-everest-linux beta
+```
 
 ### Dev
 
-`celeste-everest-linux dev`
+```sh
+$ celeste-everest-linux dev
+```
+
+## Related projects
+
+* [Olympus](https://github.com/EverestAPI/Olympus)
+* [everinst](https://github.com/leo60228/everinst)
