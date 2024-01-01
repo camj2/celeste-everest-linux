@@ -47,7 +47,7 @@ everest_install() {
   install -d -m 700 "$TMP"
 
   curl -fsSL -o "$TMP/everest.zip" \
-    "${API}/${1}/artifacts?artifactName=main&api-version=7.0&%24format=zip" || exit
+    "${API}/${1}/artifacts?artifactName=main&api-version=${API_VERSION}&%24format=zip" || exit
 
   unzip -q -d "$TMP/everest" "$TMP/everest.zip"
 
