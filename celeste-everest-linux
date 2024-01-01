@@ -42,7 +42,7 @@ azure_parse() {
 }
 
 everest_install() {
-  trap 'rm -rf "$TMP"' HUP INT TERM
+  trap 'rm -rf "$TMP"; exit 1' HUP INT TERM
 
   install -d -m 700 "$TMP"
 
