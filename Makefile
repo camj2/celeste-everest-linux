@@ -1,9 +1,9 @@
 PREFIX = /usr/local
 
 all:
-	@shfmt -w -d -p -i 2 -ci -sr celeste-everest-linux
+	-@shfmt -w -d -p -i 2 -ci -sr celeste-everest-linux
 
-	@shellcheck celeste-everest-linux
+	-@shellcheck celeste-everest-linux
 
 install:
 	@mkdir -p $(DESTDIR)$(PREFIX)/bin
