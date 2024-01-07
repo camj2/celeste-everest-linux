@@ -27,18 +27,10 @@ env_check() {
 azure_parse() {
   # https://github.com/leo60228/everinst/blob/master/src/updater.rs
   curl -s "${API}?api-version=${API_VERSION}" |
-    jq -r '.value[] |
-      .sourceBranch + " " +
-      .status + " " +
-      .result + " " +
-      .reason + " " +
-      (.id|tostring)' |
-    awk '$1 != "refs/heads/core"' |
-    awk '$2 == "completed"' |
-    awk '$3 == "succeeded"' |
-    awk '$4 == "manual" || $4 == "individualCI"' |
-    awk '{print $5 " " $1}' |
-    sed 's#refs/heads/##g'
+    jq -r '.value[] | select(
+        (.status == "completed" and .result == "succeeded") and
+        (.reason == "manual" or .reason == "individualCI")
+      ) | (.id | tostring) + " " + (.sourceBranch | sub("refs/heads/"; ""))'
 }
 
 everest_install() {
