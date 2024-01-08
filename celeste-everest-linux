@@ -6,21 +6,16 @@ API_VERSION=7.1
 TMP="${XDG_RUNTIME_DIR:-/tmp}/celeste-everest-linux"
 
 env_check() {
-  for bin in jq awk sed curl unzip rsync; do
-    if ! command -v "$bin" > /dev/null 2>&1; then
-      printf "celeste-everest-linux: program '%s' not installed\n" "$bin" 1>&2
-      exit 1
-    fi
-  done
+  if ! command -v jq > /dev/null; then
+    die 127 "jq not installed"
+  fi
 
   if [ ! -x Celeste ]; then
-    printf "celeste-everest-linux: executable '%s/Celeste' not found\n" "$(pwd)" 1>&2
-    exit 1
+    die 1 "executable 'Celeste': not found"
   fi
 
   if [ -e "$TMP" ]; then
-    printf "celeste-everest-linux: directory '%s' already exists\n" "$TMP" 1>&2
-    exit 1
+    die 1 "directory '$TMP': already exists"
   fi
 }
 
@@ -33,23 +28,19 @@ azure_parse() {
       ) | (.id | tostring) + " " + (.sourceBranch | sub("refs/heads/"; ""))'
 }
 
-everest_install() {
-  trap 'rm -rf "$TMP"; exit 1' HUP INT TERM
-
-  install -d -m 700 "$TMP"
-
-  curl -s -o "$TMP/everest.zip" \
-    "${API}/${1}/artifacts?artifactName=main&api-version=${API_VERSION}&%24format=zip"
+everest_download() {
+  curl -sf -o "$TMP/everest.zip" \
+    "${API}/${1}/artifacts?artifactName=main&api-version=${API_VERSION}&%24format=zip" || return
 
   unzip -q -d "$TMP/everest" "$TMP/everest.zip"
 
   rsync -aAX --checksum "$TMP/everest/main/" ./
+}
 
-  rm -rf "$TMP"
-
+everest_install() {
   chmod +x MiniInstaller-linux
 
-  ./MiniInstaller-linux
+  ./MiniInstaller-linux || return
 
   ln -s Celeste Celeste.bin.x86_64
 }
@@ -58,22 +49,42 @@ everest_install_branch() {
   version=$(azure_parse | awk -v branch="$1" '$2 == branch {print $1; exit}')
 
   if [ -z "$version" ]; then
-    printf "celeste-everest-linux: unable to parse Azure API\n" 1>&2
-    exit 1
+    die 1 "parse failed"
   fi
 
-  everest_install "$version"
+  trap 'rm -rf "$TMP"; exit 1' HUP INT TERM
+  install -d -m 700 "$TMP"
+
+  everest_download "$version"
+  ret=$?
+
+  rm -rf "$TMP"
+  trap - HUP INT TERM
+
+  if [ "$ret" -ne 0 ]; then
+    die 1 "download failed"
+  fi
+
+  if ! everest_install; then
+    die 1 "install failed"
+  fi
+}
+
+die() {
+  printf "celeste-everest-linux: %s\n" "$2" 1>&2
+
+  exit "$1"
 }
 
 RST='\033[0;00m'
 GRN='\033[0;32m'
-GLD='\033[0;33m'
+YLW='\033[0;33m'
 
 usage() {
-  printf "%b\n" "${GLD}USAGE${RST}:"
+  printf "%b\n" "${YLW}USAGE${RST}:"
   printf "%s\n" "    celeste-everest-linux [BRANCH]"
   printf "\n"
-  printf "%b\n" "${GLD}BRANCHES${RST}:"
+  printf "%b\n" "${YLW}BRANCHES${RST}:"
   printf "%b\n" "    ${GRN}s${RST}, ${GRN}stable${RST}"
   printf "%b\n" "    ${GRN}b${RST}, ${GRN}beta${RST}"
   printf "%b\n" "    ${GRN}d${RST}, ${GRN}dev${RST}"
@@ -100,7 +111,6 @@ case $1 in
     ;;
 
   *)
-    printf "celeste-everest-linux: invalid branch -- '%s'\n" "$1" 1>&2
-    exit 1
+    die 1 "unrecognized branch '$1'"
     ;;
 esac
