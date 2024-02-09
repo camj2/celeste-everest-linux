@@ -7,15 +7,15 @@ TMP="${XDG_RUNTIME_DIR:-/tmp}/celeste-everest-linux"
 
 env_check() {
   if ! command -v jq > /dev/null; then
-    die 127 "jq not installed"
+    die "jq not installed"
   fi
 
   if [ ! -x Celeste ]; then
-    die 1 "executable 'Celeste': not found"
+    die "executable 'Celeste': not found"
   fi
 
   if [ -e "$TMP" ]; then
-    die 1 "directory '$TMP': already exists"
+    die "directory '$TMP': already exists"
   fi
 }
 
@@ -28,54 +28,43 @@ azure_parse() {
       ) | (.id | tostring) + " " + (.sourceBranch | sub("refs/heads/"; ""))'
 }
 
-everest_download() {
-  curl -sf -o "$TMP/everest.zip" \
-    "${API}/${1}/artifacts?artifactName=main&api-version=${API_VERSION}&%24format=zip" || return
-
-  unzip -q -d "$TMP/everest" "$TMP/everest.zip"
-
-  rsync -aAX --checksum "$TMP/everest/main/" ./
-}
-
 everest_install() {
-  chmod +x MiniInstaller-linux
+  trap 'rm -rf "$TMP"; exit 1' HUP INT TERM
 
-  ./MiniInstaller-linux || return
+  install -d -m 700 "$TMP"
 
-  if [ -x Celeste ] && [ ! -e Celeste.bin.x86_64 ]; then
-    ln -s Celeste Celeste.bin.x86_64
-  fi
+  (
+    set -ex # -x, optional
+
+    curl -s -o "$TMP/everest.zip" \
+      "${API}/${1}/artifacts?artifactName=main&api-version=${API_VERSION}&%24format=zip"
+
+    unzip -q -d "$TMP/everest" "$TMP/everest.zip"
+
+    rsync -aAX --checksum "$TMP/everest/main/" ./
+
+    chmod +x MiniInstaller-linux
+
+    ./MiniInstaller-linux
+
+    ln -s Celeste Celeste.bin.x86_64 # optional
+  )
+  ret=$?
+
+  rm -rf "$TMP"
+
+  exit $ret
 }
 
 everest_install_branch() {
   version=$(azure_parse | awk -v branch="$1" '$2 == branch {print $1; exit}')
 
-  if [ -z "$version" ]; then
-    die 1 "parse failed"
-  fi
-
-  trap 'rm -rf "$TMP"; exit 1' HUP INT TERM
-  install -d -m 700 "$TMP"
-
-  everest_download "$version"
-  ret=$?
-
-  rm -rf "$TMP"
-  trap - HUP INT TERM
-
-  if [ "$ret" -ne 0 ]; then
-    die 1 "download failed"
-  fi
-
-  if ! everest_install; then
-    die 1 "install failed"
-  fi
+  everest_install "$version"
 }
 
 die() {
-  printf "celeste-everest-linux: %s\n" "$2" 1>&2
-
-  exit "$1"
+  printf "celeste-everest-linux: %s\n" "$*" >&2
+  exit 1
 }
 
 RST='\033[0;00m'
@@ -113,6 +102,6 @@ case $1 in
     ;;
 
   *)
-    die 1 "unrecognized branch '$1'"
+    die "unrecognized branch '$1'"
     ;;
 esac
