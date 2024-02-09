@@ -1,8 +1,8 @@
 # celeste-everest-linux
 
-Fast lightweight `Everest` installer for Linux users.
+Fast lightweight [Everest](https://everestapi.github.io/) installer for Linux users.
 
-This project aims to make the installation and update procedure of the [Everest Mod Loader](https://everestapi.github.io/) simple and straightforward. `celeste-everest-linux` fetches the latest version of the specified branch and patches the `Celeste` installation found in the current working directory. No [GUI](https://github.com/EverestAPI/Olympus) required.
+This project aims to make the installation and update procedure of the Everest Mod Loader simple and straightforward. celeste-everest-linux fetches the latest version of the specified branch and patches the Celeste installation found in the current working directory. No GUI required.
 
 ![Everest](everest.png)
 
@@ -35,7 +35,7 @@ BRANCHES:
 
 ## Install Everest
 
-`cd` into the directory in which you have `Celeste` installed and install one of the following branches:
+`cd` into the directory in which you have Celeste installed and install one of the following branches:
 
 ### Stable (Recommended)
 
