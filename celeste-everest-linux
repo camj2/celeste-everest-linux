@@ -97,11 +97,7 @@ case $1 in
     everest_install_branch dev
     ;;
 
-  h | -h | help | --help | "")
-    usage
-    ;;
-
   *)
-    die "unrecognized branch '$1'"
+    usage >&2
     ;;
 esac
