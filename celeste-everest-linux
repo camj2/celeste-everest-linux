@@ -1,103 +1,142 @@
 #!/bin/sh
 
-API=https://dev.azure.com/EverestAPI/Everest/_apis/build/builds
-API_VERSION=7.1
+DIR='.'
+TMP="${XDG_RUNTIME_DIR:-/tmp}/.everest"
 
-TMP="${XDG_RUNTIME_DIR:-/tmp}/celeste-everest-linux"
+MOD_API='https://dev.azure.com/EverestAPI/Everest/_apis/build/builds'
+MOD_API_VERSION='7.1'
 
-env_check() {
-  if ! command -v jq > /dev/null; then
-    die "jq not installed"
-  fi
+MOD_BRANCH='stable'
+MOD_VERSION=
 
-  if [ ! -x Celeste ]; then
-    die "executable 'Celeste': not found"
-  fi
-
-  if [ -e "$TMP" ]; then
-    die "directory '$TMP': already exists"
-  fi
-}
-
-azure_parse() {
-  # https://github.com/leo60228/everinst/blob/master/src/updater.rs
-  curl -s "${API}?api-version=${API_VERSION}" |
+mod_api() {
+  curl -fsSL "${MOD_API}?api-version=${MOD_API_VERSION}" |
     jq -r '.value[] | select(
         (.status == "completed" and .result == "succeeded") and
         (.reason == "manual" or .reason == "individualCI")
       ) | (.id | tostring) + " " + (.sourceBranch | sub("refs/heads/"; ""))'
 }
 
-everest_install() {
-  trap 'rm -rf "$TMP"; exit 1' HUP INT TERM
-
-  install -d -m 700 "$TMP"
-
+mod_install() {
   (
     set -e
 
-    curl -s -o "$TMP/everest.zip" \
-      "${API}/${1}/artifacts?artifactName=main&api-version=${API_VERSION}&%24format=zip"
+    trap 'rm -rf "$TMP"; die "received interrupt"' HUP INT TERM
 
-    unzip -q -d "$TMP/everest" "$TMP/everest.zip"
+    mkdir -m 700 "$TMP"
 
-    rsync -aAX --checksum "$TMP/everest/main/" ./
+    msg "downloading everest version '${1}'..."
+
+    curl -fsSL -o "${TMP}/everest.zip" \
+      "${MOD_API}/${1}/artifacts?artifactName=main&api-version=${MOD_API_VERSION}&%24format=zip"
+
+    unzip -q -d "${TMP}/everest" "${TMP}/everest.zip"
+
+    rsync -a "${TMP}/everest/main/" ./
+
+    msg "installing everest version '${1}'..."
 
     chmod +x MiniInstaller-linux
 
-    ./MiniInstaller-linux
+    ./MiniInstaller-linux > /dev/null
 
-    ln -s Celeste Celeste.bin.x86_64 # optional
+    ln -ns Celeste Celeste.bin.x86_64
   )
+
   ret=$?
 
   rm -rf "$TMP"
 
-  exit $ret
+  if [ $ret -eq 0 ]; then
+    msg "done!"
+  else
+    die "fail!"
+  fi
 }
 
-everest_install_branch() {
-  version=$(azure_parse | awk -v branch="$1" '$2 == branch {print $1; exit}')
+mod_install_branch() {
+  _version=$(mod_api | awk -v branch="$1" '$2 == branch {print $1; exit}')
+  mod_install "$_version"
+}
 
-  everest_install "$version"
+pkg() {
+  _cmd=$(command -v "$1")
+  [ -x "$_cmd" ]
+}
+
+msg() {
+  printf '%b=> %s: %s%b\n' '\033[0;01m' "${0##*/}" "$*" '\033[0;00m'
 }
 
 die() {
-  printf "celeste-everest-linux: %s\n" "$*" >&2
+  printf '%b=> %s: %s%b\n' '\033[1;31m' "${0##*/}" "$*" '\033[0;00m' >&2
   exit 1
 }
 
-RST='\033[0;00m'
-GRN='\033[0;32m'
-YLW='\033[0;33m'
+while getopts g:b:v:l opt; do
+  case $opt in
+    g)
+      DIR="$OPTARG"
+      ;;
+    b)
+      case $OPTARG in
+        stable | beta | dev)
+          MOD_BRANCH="$OPTARG"
+          ;;
+        *)
+          die "unknown branch"
+          ;;
+      esac
+      ;;
+    v)
+      MOD_VERSION="$OPTARG"
+      ;;
+    l)
+      mod_api
+      exit $?
+      ;;
+    *)
+      die "unknown option"
+      ;;
+  esac
+done
 
-usage() {
-  printf "%b\n" "${YLW}USAGE${RST}:"
-  printf "%s\n" "    celeste-everest-linux [BRANCH]"
-  printf "\n"
-  printf "%b\n" "${YLW}BRANCHES${RST}:"
-  printf "%b\n" "    ${GRN}s${RST}, ${GRN}stable${RST}"
-  printf "%b\n" "    ${GRN}b${RST}, ${GRN}beta${RST}"
-  printf "%b\n" "    ${GRN}d${RST}, ${GRN}dev${RST}"
-}
+if ! cd -- "$DIR"; then
+  die "directory '$DIR': not found"
+fi
 
-case $1 in
-  s | stable)
-    env_check
-    everest_install_branch stable
-    ;;
+if [ ! -x Celeste ]; then
+  die "executable 'Celeste': not found"
+fi
 
-  b | beta)
-    env_check
-    everest_install_branch beta
-    ;;
+if [ -e "$TMP" ]; then
+  die "directory '$TMP': already exists"
+fi
 
-  d | dev)
-    env_check
-    everest_install_branch dev
-    ;;
+if ! pkg jq; then
+  die "jq not installed"
+fi
 
-  *)
-    usage >&2
-    ;;
-esac
+if ! pkg awk; then
+  die "awk not installed"
+fi
+
+if ! pkg curl; then
+  die "curl not installed"
+fi
+
+if ! pkg rsync; then
+  die "rsync not installed"
+fi
+
+if ! pkg unzip; then
+  die "unzip not installed"
+fi
+
+if [ -n "$MOD_VERSION" ]; then
+  mod_install "$MOD_VERSION"
+else
+  mod_install_branch "$MOD_BRANCH"
+fi
+
+exit 0
